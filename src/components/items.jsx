@@ -1,0 +1,37 @@
+import React from 'react';
+import {
+  Sofa,
+  Bed,
+  Tv,
+  Fridge,
+  WashingMachine,
+  Book,
+  Desk,
+  Drawer,
+  Shelf,
+  Lamp,
+  AirConditioner,
+  ForkKnife,
+  Bath,
+  Chair,
+  Table,
+} from 'iconoir-react';
+
+export const ITEMS = [
+  { name: 'canape',    label: 'Canapé',            category: 'Salon',        icon: <Sofa width={36} height={36} /> },
+  { name: 'lit',       label: 'Lit double',        category: 'Chambre',      icon: <Bed width={36} height={36} /> },
+  { name: 'fauteuil',  label: 'Fauteuil',          category: 'Salon',        icon: <Chair width={36} height={36} /> },
+  { name: 'table',     label: 'Table à manger',    category: 'Cuisine',      icon: <Table width={36} height={36} /> },
+  { name: 'chaise',    label: 'Chaise',            category: 'Cuisine',      icon: <Chair width={36} height={36} /> },
+  { name: 'tv',        label: 'Télévision',        category: 'Salon',        icon: <Tv width={36} height={36} /> },
+  { name: 'frigo',     label: 'Réfrigérateur',     category: 'Cuisine',      icon: <Fridge width={36} height={36} /> },
+  { name: 'laveLinge', label: 'Lave-linge',        category: 'Buanderie',    icon: <WashingMachine width={36} height={36} /> },
+  { name: 'armoire',   label: 'Armoire / bibliothèque', category: 'Chambre', icon: <Book width={36} height={36} /> },
+  { name: 'bureau',    label: 'Bureau',            category: 'Bureau',       icon: <Desk width={36} height={36} /> },
+  { name: 'commode',   label: 'Commode',           category: 'Chambre',      icon: <Drawer width={36} height={36} /> },
+  { name: 'etagere',   label: 'Étagère',           category: 'Salon',        icon: <Shelf width={36} height={36} /> },
+  { name: 'lampe',     label: 'Lampe',             category: 'Tous',         icon: <Lamp width={36} height={36} /> },
+  { name: 'ventilo',   label: 'Climatiseur / Ventilateur', category: 'Tous', icon: <AirConditioner width={36} height={36} /> },
+  { name: 'vaisselle', label: 'Service vaisselle', category: 'Cuisine',      icon: <ForkKnife width={36} height={36} /> },
+  { name: 'baignoire', label: 'Baignoire',         category: 'Salle de bain', icon: <Bath width={36} height={36} /> },
+];
