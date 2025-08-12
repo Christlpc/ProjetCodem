@@ -54,3 +54,6 @@ export const ITEMS = [
   { name: 'vaisselle', label: 'Service vaisselle', category: 'Cuisine',   icon: <img src={vaisselleImg} style={{ width: 50, height: 50 }} /> },
   { name: 'baignoire', label: 'Baignoire',         category: 'Salle de bain', icon: <img src={baignoireImg} style={{ width: 50, height: 50 }} />},
 ];
+
+
+//divinjorly
