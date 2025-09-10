@@ -1,23 +1,9 @@
 // src/components/DevisStepper.jsx
 import React, { useState } from "react";
 import {
-  Stepper,
-  Step,
-  StepLabel,
-  Button,
-  Typography,
-  Box,
-  TextField,
-  FormControlLabel,
-  Checkbox,
-  Badge,
-  Container,
-  IconButton,
-  useTheme,
-  Autocomplete,
-  MenuItem,
-  Paper,
-  Grid
+  Stepper, Step, StepLabel, Button, Typography, Box, TextField,
+  FormControlLabel, Checkbox, Container, IconButton, Autocomplete,
+  MenuItem, Paper, Grid, Alert
 } from "@mui/material";
 import { Add, Remove } from "@mui/icons-material";
 import { useForm, Controller, FormProvider } from "react-hook-form";
@@ -67,9 +53,9 @@ const stepFields = {
 };
 
 export default function DevisStepper() {
-  const theme = useTheme();
   const [activeStep, setActiveStep] = useState(0);
   const [search, setSearch] = useState("");
+  const [serverMsg, setServerMsg] = useState({ type: "", text: "" });
 
   const methods = useForm({
     resolver: yupResolver(schema),
@@ -79,7 +65,7 @@ export default function DevisStepper() {
       date: "",
       housingType: "",
       hasFloors: false,
-      floor: null,
+      floor:"",
       hasElevator: false,
       volume: "",
       items: ITEMS_SAFE.reduce((acc, i) => ({ ...acc, [i.name]: 0 }), {}),
@@ -90,14 +76,74 @@ export default function DevisStepper() {
     }
   });
 
-  const { control, handleSubmit, setValue, getValues, trigger, watch } = methods;
+  const { control, handleSubmit, setValue, getValues, trigger, watch, reset, getValues: gv } = methods;
   const hasFloors = watch("hasFloors");
 
+  // --- Helpers ---
+  // Normalise les nombres saisis: "80 000", "80.000", "80,000" -> "80000"
+  const normalizeNumber = (val) => {
+    if (val == null) return "";
+    return String(val).replace(/[ .,\u00A0]/g, "");
+  };
+
+  const toIntOrUndefined = (val) => {
+    const s = normalizeNumber(val);
+    if (!s) return undefined;
+    const n = parseInt(s, 10);
+    return Number.isFinite(n) ? n : undefined;
+  };
+
+  const buildItemsArray = (itemsObj) => {
+    const arr = [];
+    for (const it of ITEMS_SAFE) {
+      const qty = Number(itemsObj[it.name] ?? 0);
+      if (qty > 0) {
+        arr.push({ name: it.name, label: it.label, quantity: qty });
+      }
+    }
+    return arr;
+  };
+
   const onSubmit = async (data) => {
-    await axios.post("/api/devis/submit", data);
-    alert("Demande envoyée 😊");
-    setActiveStep(0);
-    methods.reset();
+    setServerMsg({ type: "", text: "" });
+
+    // ---- Mapping vers CI4 ----
+    const payload = {
+      nom: data.fullName.trim(),
+      email: data.email.trim(),
+      telephone: data.phone ? String(data.phone).trim() : undefined,
+      typeLogement: data.housingType,                           // string
+      volume: normalizeNumber(data.volume),                     // string OK pour le back
+      adresseDepart: data.departureAddress.trim(),
+      adresseArrivee: data.arrivalAddress.trim(),
+      dateSouhaitee: data.date,                                 // YYYY-MM-DD
+      etages: data.hasFloors ? toIntOrUndefined(data.floor) : undefined,
+      ascenseur: data.hasElevator ? 1 : 0,                      // 1/0
+      message: data.additionalInfo?.trim() || undefined,
+      items: buildItemsArray(data.items),                       // [{name,label,quantity}]
+    };
+
+    try {
+      const { data: res } = await axios.post(
+        "http://localhost:8080/api/demandes",
+        payload,
+        { headers: { "Content-Type": "application/json" } }
+      );
+
+      setServerMsg({
+        type: "success",
+        text: `✅ ${res?.message || "Demande enregistrée"} (réf: ${res?.reference || "—"})`
+      });
+
+      setActiveStep(0);
+      reset();
+    } catch (err) {
+      const apiErrs = err?.response?.data?.errors;
+      const text =
+        err?.response?.data?.message ||
+        (apiErrs ? Object.values(apiErrs).join(" | ") : "Une erreur est survenue.");
+      setServerMsg({ type: "error", text });
+    }
   };
 
   const handleNext = async () => {
@@ -107,7 +153,8 @@ export default function DevisStepper() {
 
   const handleBack = () => setActiveStep(prev => prev - 1);
 
-  const filtered = ITEMS_SAFE.filter(i =>
+  const allItemsArray = ITEMS_SAFE;
+  const filtered = allItemsArray.filter(i =>
     i.label.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -166,12 +213,8 @@ export default function DevisStepper() {
                       error={!!fieldState.error}
                       helperText={fieldState.error?.message}
                       sx={{
-                        minWidth: 200, // largeur minimale visible même sans valeur
-                        '& .MuiSelect-select': {
-                          minHeight: 56, // garde le champ haut même vide
-                          display: 'flex',
-                          alignItems: 'center'
-                        }
+                        minWidth: 200,
+                        "& .MuiSelect-select": { minHeight: 56, display: "flex", alignItems: "center" }
                       }}
                     >
                       {[
@@ -213,12 +256,7 @@ export default function DevisStepper() {
                       name="floor"
                       control={control}
                       render={({ field }) => (
-                        <TextField
-                          {...field}
-                          type="number"
-                          label="Numéro d’étage"
-                          fullWidth
-                        />
+                        <TextField {...field} type="number" label="Numéro d’étage" fullWidth />
                       )}
                     />
                   </Grid>
@@ -242,29 +280,22 @@ export default function DevisStepper() {
                   name="volume"
                   control={control}
                   render={({ field, fieldState }) => (
-                  <TextField
-                    {...field}
-                    select
-                    label="Volume approximatif"
-                    fullWidth
-                    error={!!fieldState.error}
-                    helperText={fieldState.error?.message}
-                    sx={{
-                      minWidth: 200, // largeur minimale visible même sans valeur
-                      '& .MuiSelect-select': {
-                        minHeight: 56, // garde le champ haut même vide
-                        display: 'flex',
-                        alignItems: 'center'
-                      }
-                    }}
-                  >
-                    {["10-25", "25-35", "35-60", "60-75", "75-85", "85-100"].map(v => (
-                      <MenuItem key={v} value={v}>
-                        {v} m³
-                      </MenuItem>
-                    ))}
-                  </TextField>
-
+                    <TextField
+                      {...field}
+                      select
+                      label="Volume approximatif"
+                      fullWidth
+                      error={!!fieldState.error}
+                      helperText={fieldState.error?.message || "Ex: 10-25 m³"}
+                      sx={{
+                        minWidth: 200,
+                        "& .MuiSelect-select": { minHeight: 56, display: "flex", alignItems: "center" }
+                      }}
+                    >
+                      {["10-25", "25-35", "35-60", "60-75", "75-85", "85-100"].map(v => (
+                        <MenuItem key={v} value={v}>{v} m³</MenuItem>
+                      ))}
+                    </TextField>
                   )}
                 />
               </Grid>
@@ -272,84 +303,71 @@ export default function DevisStepper() {
           </Paper>
         );
 
-case 2:
-  return (
-    <Box>
-      <Autocomplete
-        freeSolo
-        options={ITEMS_SAFE.map(i => i.label)}
-        onInputChange={(_, v) => setSearch(v)}
-        renderInput={params => (
-          <TextField {...params} label="Rechercher un objet" fullWidth />
-        )}
-        sx={{ mb: 3 }}
-      />
+      case 2:
+        return (
+          <Box>
+            <Autocomplete
+              freeSolo
+              options={ITEMS_SAFE.map(i => i.label)}
+              onInputChange={(_, v) => setSearch(v)}
+              renderInput={params => (
+                <TextField {...params} label="Rechercher un objet" fullWidth />
+              )}
+              sx={{ mb: 3 }}
+            />
 
-      {Object.entries(byCategory).map(([cat, items]) => (
-        <Paper key={cat} elevation={2} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
-            {cat}
-          </Typography>
-          <Grid container spacing={3}>
-            {items.map(item => {
-              const count = getValues(`items.${item.name}`);
-
-              return (
-                <Grid item xs={6} sm={4} md={3} key={item.name}>
-                  <Paper
-                    elevation={3}
-                    sx={{
-                      p: 2,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      textAlign: "center",
-                      transition: "0.2s",
-                      borderRadius: 2,
-                      "&:hover": {
-                        boxShadow: 6,
-                        transform: "scale(1.02)",
-                      }
-                    }}
-                  >
-                    <Box color="primary.main" mb={1}>
-                      {item.icon}
-                    </Box>
-                    <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                      {item.label}
-                    </Typography>
-
-                    <Box display="flex" alignItems="center" justifyContent="center" mt={1}>
-                      <IconButton
-                        onClick={() =>
-                          setValue(`items.${item.name}`, Math.max(0, count - 1))
-                        }
-                        disabled={count === 0}
-                        size="small"
-                      >
-                        <Remove />
-                      </IconButton>
-                      <Typography variant="h6" mx={2}>
-                        {count}
-                      </Typography>
-                      <IconButton
-                        onClick={() =>
-                          setValue(`items.${item.name}`, count + 1)
-                        }
-                        size="small"
-                      >
-                        <Add />
-                      </IconButton>
-                    </Box>
-                  </Paper>
+            {Object.entries(byCategory).map(([cat, items]) => (
+              <Paper key={cat} elevation={2} sx={{ p: 2, mb: 3, borderRadius: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
+                  {cat}
+                </Typography>
+                <Grid container spacing={3}>
+                  {items.map(item => {
+                    const count = getValues(`items.${item.name}`);
+                    return (
+                      <Grid item xs={6} sm={4} md={3} key={item.name}>
+                        <Paper
+                          elevation={3}
+                          sx={{
+                            p: 2,
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            textAlign: "center",
+                            transition: "0.2s",
+                            borderRadius: 2,
+                            "&:hover": { boxShadow: 6, transform: "scale(1.02)" }
+                          }}
+                        >
+                          <Box color="primary.main" mb={1}>{item.icon}</Box>
+                          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                            {item.label}
+                          </Typography>
+                          <Box display="flex" alignItems="center" justifyContent="center" mt={1}>
+                            <IconButton
+                              onClick={() => setValue(`items.${item.name}`, Math.max(0, count - 1))}
+                              disabled={count === 0}
+                              size="small"
+                            >
+                              <Remove />
+                            </IconButton>
+                            <Typography variant="h6" mx={2}>{count}</Typography>
+                            <IconButton
+                              onClick={() => setValue(`items.${item.name}`, count + 1)}
+                              size="small"
+                            >
+                              <Add />
+                            </IconButton>
+                          </Box>
+                        </Paper>
+                      </Grid>
+                    );
+                  })}
                 </Grid>
-              );
-            })}
-          </Grid>
-        </Paper>
-      ))}
-    </Box>
-  );
+              </Paper>
+            ))}
+          </Box>
+        );
 
       case 3:
         return (
@@ -394,6 +412,13 @@ case 2:
       <Typography variant="h4" align="center" gutterBottom>
         Déménagez maintenant
       </Typography>
+
+      {serverMsg.text && (
+        <Alert severity={serverMsg.type === "success" ? "success" : "error"} sx={{ mb: 2 }}>
+          {serverMsg.text}
+        </Alert>
+      )}
+
       <FormProvider {...methods}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
@@ -403,13 +428,11 @@ case 2:
               </Step>
             ))}
           </Stepper>
+
           {renderStep()}
+
           <Box display="flex" justifyContent="space-between" mt={4}>
-            <Button
-              disabled={activeStep === 0}
-              onClick={handleBack}
-              variant="outlined"
-            >
+            <Button disabled={activeStep === 0} onClick={handleBack} variant="outlined">
               Retour
             </Button>
             {activeStep === steps.length - 1 ? (
