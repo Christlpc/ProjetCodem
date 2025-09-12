@@ -322,47 +322,47 @@ export default function DevisStepper() {
                   {cat}
                 </Typography>
                 <Grid container spacing={3}>
-                  {items.map(item => {
-                    const count = getValues(`items.${item.name}`);
-                    return (
-                      <Grid item xs={6} sm={4} md={3} key={item.name}>
-                        <Paper
-                          elevation={3}
-                          sx={{
-                            p: 2,
-                            display: "flex",
-                            flexDirection: "column",
-                            alignItems: "center",
-                            textAlign: "center",
-                            transition: "0.2s",
-                            borderRadius: 2,
-                            "&:hover": { boxShadow: 6, transform: "scale(1.02)" }
-                          }}
-                        >
-                          <Box color="primary.main" mb={1}>{item.icon}</Box>
-                          <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                            {item.label}
-                          </Typography>
-                          <Box display="flex" alignItems="center" justifyContent="center" mt={1}>
-                            <IconButton
-                              onClick={() => setValue(`items.${item.name}`, Math.max(0, count - 1))}
-                              disabled={count === 0}
-                              size="small"
-                            >
-                              <Remove />
-                            </IconButton>
-                            <Typography variant="h6" mx={2}>{count}</Typography>
-                            <IconButton
-                              onClick={() => setValue(`items.${item.name}`, count + 1)}
-                              size="small"
-                            >
-                              <Add />
-                            </IconButton>
-                          </Box>
-                        </Paper>
-                      </Grid>
-                    );
-                  })}
+                {items.map(item => {
+                  const count = watch(`items.${item.name}`);
+                  return (
+                    <Grid item xs={6} sm={4} md={3} key={item.name}>
+                      <Paper
+                        elevation={3}
+                        sx={{
+                          p: 2,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          textAlign: "center",
+                          transition: "0.2s",
+                          borderRadius: 2,
+                          "&:hover": { boxShadow: 6, transform: "scale(1.02)" }
+                        }}
+                      >
+                        <Box color="primary.main" mb={1}>{item.icon}</Box>
+                        <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                          {item.label}
+                        </Typography>
+                        <Box display="flex" alignItems="center" justifyContent="center" mt={1}>
+                          <IconButton
+                            onClick={() => setValue(`items.${item.name}`, Math.max(0, (count || 0) - 1))}
+                            disabled={count === 0}
+                            size="small"
+                          >
+                            <Remove />
+                          </IconButton>
+                          <Typography variant="h6" mx={2}>{count || 0}</Typography>
+                          <IconButton
+                            onClick={() => setValue(`items.${item.name}`, (count || 0) + 1)}
+                            size="small"
+                          >
+                            <Add />
+                          </IconButton>
+                        </Box>
+                      </Paper>
+                    </Grid>
+                  );
+                })}
                 </Grid>
               </Paper>
             ))}
