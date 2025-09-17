@@ -20,13 +20,21 @@ const fallbackItems = [
 
 const ITEMS_SAFE = ITEMS || fallbackItems;
 
+// --- Schéma Yup --- 
 const schema = yup.object({
   departureAddress: yup.string().required(),
   arrivalAddress: yup.string().required(),
   date: yup.string().required(),
   housingType: yup.string().required(),
   hasFloors: yup.boolean(),
-  floor: yup.number().nullable(),
+  floor: yup
+    .number()
+    .nullable()
+    .when("hasFloors", {
+      is: true,
+      then: (s) => s.required("Veuillez préciser l’étage").min(0),
+      otherwise: (s) => s.transform(() => null).nullable()
+    }),
   hasElevator: yup.boolean(),
   volume: yup.string().required(),
   items: yup
@@ -42,6 +50,7 @@ const schema = yup.object({
   phone: yup.string().required(),
   additionalInfo: yup.string().nullable()
 });
+
 
 const steps = ["Adresses", "Logement", "Objets", "Contact"];
 
@@ -104,47 +113,57 @@ export default function DevisStepper() {
     return arr;
   };
 
-  const onSubmit = async (data) => {
-    setServerMsg({ type: "", text: "" });
+// --- Dans onSubmit ---
+const onSubmit = async (data) => {
+  setServerMsg({ type: "", text: "" });
 
-    // ---- Mapping vers CI4 ----
-    const payload = {
-      nom: data.fullName.trim(),
-      email: data.email.trim(),
-      telephone: data.phone ? String(data.phone).trim() : undefined,
-      typeLogement: data.housingType,                           // string
-      volume: normalizeNumber(data.volume),                     // string OK pour le back
-      adresseDepart: data.departureAddress.trim(),
-      adresseArrivee: data.arrivalAddress.trim(),
-      dateSouhaitee: data.date,                                 // YYYY-MM-DD
-      etages: data.hasFloors ? toIntOrUndefined(data.floor) : undefined,
-      ascenseur: data.hasElevator ? 1 : 0,                      // 1/0
-      message: data.additionalInfo?.trim() || undefined,
-      items: buildItemsArray(data.items),                       // [{name,label,quantity}]
-    };
-
-    try {
-      const { data: res } = await axios.post(
-        "https://codemback-1.onrender.com/api/demandes/create/",
-        payload,
-        { headers: { "Content-Type": "application/json" } }
-      );
-
-      setServerMsg({
-        type: "success",
-        text: `✅ ${res?.message || "Demande enregistrée"} (réf: ${res?.reference || "—"})`
-      });
-
-      setActiveStep(0);
-      reset();
-    } catch (err) {
-      const apiErrs = err?.response?.data?.errors;
-      const text =
-        err?.response?.data?.message ||
-        (apiErrs ? Object.values(apiErrs).join(" | ") : "Une erreur est survenue.");
-      setServerMsg({ type: "error", text });
-    }
+  const payload = {
+    nom: data.fullName.trim(),
+    email: data.email.trim(),
+    telephone: data.phone ? String(data.phone).trim() : undefined,
+    typeLogement: data.housingType,
+    volume: normalizeNumber(data.volume),
+    adresseDepart: data.departureAddress.trim(),
+    adresseArrivee: data.arrivalAddress.trim(),
+    dateSouhaitee: data.date,
+    etages: data.hasFloors ? toIntOrUndefined(data.floor) : undefined,
+    ascenseur: data.hasElevator ? 1 : 0,
+    message: data.additionalInfo?.trim() || undefined,
+    items: buildItemsArray(data.items),
   };
+
+  try {
+    const { data: res } = await axios.post(
+      "https://codemback-1.onrender.com/api/demandes/create/",
+      payload,
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+    setServerMsg({
+      type: "success",
+      text: `✅ ${res?.message || "Demande enregistrée"} (réf: ${res?.reference || "—"})`
+    });
+
+    setActiveStep(0);
+    reset();
+
+    // 🔝 Ramener en haut
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // 🔄 Recharger la page après un petit délai (optionnel)
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+
+  } catch (err) {
+    const apiErrs = err?.response?.data?.errors;
+    const text =
+      err?.response?.data?.message ||
+      (apiErrs ? Object.values(apiErrs).join(" | ") : "Une erreur est survenue.");
+    setServerMsg({ type: "error", text });
+  }
+};
+
 
   const handleNext = async () => {
     const valid = await trigger(stepFields[activeStep]);
