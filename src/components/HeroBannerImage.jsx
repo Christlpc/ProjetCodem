@@ -1,6 +1,6 @@
 import { Box, Button, useTheme } from '@mui/material';
 import { motion } from 'framer-motion';
-import { Link as ScrollLink } from 'react-scroll';
+import { Link as ScrollLink, Element } from 'react-scroll';
 import  Banner  from '../assets/hero.png';
 
 
@@ -28,26 +28,26 @@ function HeroBannerImage() {
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
         >
-          <ScrollLink to="formulaire-dem" smooth={true} duration={600} offset={-80}>
-            <Button
-              variant="contained"
-              color="primary"
-              size="large"
-              sx={{
-                borderRadius: '50px',
-                px: 4,
-                py: 1.5,
-                fontWeight: 'bold',
-                fontSize: '1rem',
-                bgcolor: theme.palette.primary.main,
-                '&:hover': {
-                  bgcolor: theme.palette.primary.dark,
-                },
-              }}
-            >
-              Demander un déménagement
-            </Button>
-          </ScrollLink>
+          <Button
+            component={ScrollLink}
+            to="formulaire-dem"
+            smooth
+            duration={600}
+            offset={-80}
+            variant="contained"
+            color="primary"
+            size="large"
+            sx={{
+              borderRadius: '50px',
+              px: 4,
+              py: 1.5,
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              '&:hover': { bgcolor: 'primary.dark' },
+            }}
+          >
+            Demander un déménagement
+          </Button>
         </motion.div>
       </Box>
     </Box>

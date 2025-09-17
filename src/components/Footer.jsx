@@ -129,7 +129,7 @@ const Footer = () => {
               <Typography variant="body2">
                 Téléphone:{' '}
                 <Link href="tel:+33123456789" color="inherit" underline="hover">
-                  +242 06 190 24 19  +242 04 447 95 91
+                  +242 06 190 24 19 / +242 04 447 95 91
                 </Link>
               </Typography>
             </Grid>
