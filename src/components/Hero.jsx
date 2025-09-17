@@ -36,7 +36,7 @@ function Hero() {
             transition={{ delay: 0.4 }}
           >
             <Typography variant="h6" color="text.secondary" paragraph>
-              Trouvez des déménageurs fiables pour particuliers et entreprises.
+              Vous bougez ? Nous vous accompagnons jusqu'au bout.
             </Typography>
           </motion.div>
 
