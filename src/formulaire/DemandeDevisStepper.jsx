@@ -125,7 +125,7 @@ export default function DevisStepper() {
 
     try {
       const { data: res } = await axios.post(
-        "http://localhost:8080/api/demandes",
+        "https://codemback-1.onrender.com/api/demandes/create",
         payload,
         { headers: { "Content-Type": "application/json" } }
       );
